@@ -1,0 +1,60 @@
+name: Update Dependencies
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repo
+    - uses: actions/checkout@v3
+
+# Set the version of python you're using
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.8'
+
+# Install the utilities we'll need
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pip-tools
+
+# Compile a new requirements.txt
+    - name: Update Dependencies
+      run: |
+        # cd src/
+        pip-compile
+
+# Commit the files to git
+    - name: Commit files
+      run: |
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git commit -m "Update Dependencies" -a
+
+# Push changes back to GitHub
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: pip-deps
+        force: true
+
+# Create a pull request
+    - name: Create PR
+      uses: devops-infra/action-pull-request@v0.4.2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        source_branch: pip-deps
+        target_branch: main
+        title: Update python dependencies
+        body: "**Automated dependency update**"
+        reviewer: octocat
+        assignee: octocat
